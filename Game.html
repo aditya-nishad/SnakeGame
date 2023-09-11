@@ -1,0 +1,259 @@
+<html>
+<head>
+    <title>Snake Game</title>
+    <style>
+        body {
+            font-family: Sans, sans-serif;
+            background-color: #aaffc3; /* Mint background color */
+            margin: 0;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 1px solid #333;
+            background-color: transparent; /* Mint background color for the canvas */
+            background-image: url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhJRbVeecs8VWKreNx-mQN17Y8PAh3wuGL3jPJxM7l1uIyB49CjAun7sEtJwIpD00bESliK15vrC4LZCNlnnMGAmmpwM7REqeLO6i__p_ba5U1Bo7grDDyo6nNzB3GFYOJUue-w6EVTKSfERNvDRzgUzNtLkmydJbyc-asC6q0pJLE2rQayUTFH9JPCRSwR/s480/6.png'); /* Set the background image */
+            background-size: cover;
+            width: 80vw;
+            height: 50vh;
+        }
+
+        .credit {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .scores {
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        /* Style for the Game Over message */
+        #gameOverMessage {
+            display: none;
+            position: absolute;
+            top: 27%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: bottom;
+            font-size: 16px;
+            color: red;
+            background-color: white;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            max-width: 80vw; /* Set a maximum width for the message */
+        }
+
+        #refreshButton {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #score {
+            position: absolute;
+            top: 12%;
+            left: 91%;
+            transform: translate(-50%, -50%);
+        }
+      #highestScore {
+            position: absolute;
+        	top:12%;
+        	left: 11%;
+        transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="snakeCanvas"></canvas>
+    <div class="scores">
+        <div id="highestScore">HS: <span id="highestScore">0</span></div>
+        <div id="score">CS: <span id="currentScore">0</span></div>
+    </div>
+    <div class="credit">Created by Aditya Nishad</div>
+
+    <!-- Game Over message -->
+    <div id="gameOverMessage">Game Over!</div>
+    <button id="refreshButton" style="display: none;">Refresh Game</button>
+
+
+    <script>
+        const refreshButton = document.getElementById('refreshButton');
+
+        refreshButton.addEventListener('click', function() {
+        location.reload(); // Reload the page
+        });
+
+        const canvas = document.getElementById('snakeCanvas');
+        const ctx = canvas.getContext('2d');
+        const synth = window.speechSynthesis; // Web Speech API
+
+        const gridSize = 14; // Adjusted gridSize for better visibility
+        const canvasWidth = 1010;
+        const canvasHeight = 300;
+        canvas.width = 1010;
+        canvas.height = 300;
+        const snake = [{ x: 14, y: 14 }];
+        let food = { x: 0, y: 0 };
+        let dx = gridSize;
+        let dy = 0;
+        let changingDirection = false;
+        let currentScore = 0;
+        const appleImage = new Image();
+        appleImage.src = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgfw35GpcOC5eD_ZJMCrqbMEJgv3HTySDhwYgbuhQ44U0CiBaRqFuYC0ML4B60FnhBbeeNvwf9jDYMGnikvHyqoTJ01V-Wz_vuvZVxYuWm1QLuTorCirxwd1AVMXK26AnXx3goLcpQtnMX5rfWUNfVkAQ1lQPOU5jxlcxPona3i392Wa232jYE6gjISYn3j/s2824/Fresh-red-apple-isolated-on-transparent-background-PNG.png'; // Replace with actual path
+
+        const snakeImage = new Image();
+        snakeImage.src = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiBMQSX_84RGW02zYgDGiPlJhngbeG8PTnjW5KAzWATpZpZXPYHn-g26M1u_ZgL68JVWphvgUGoen0FEMaCXrROAw3ramxV3rmGW4azIGXkIvyhcf-6Sw_di0lmtK7ALAMgaSQcRrgT7BGzTDc3qdFQfhV0VgeH0IfLm8Kt1KMHUslU2V_VtCYJ_ilru4wF/s256/27267_64761_box_green_square.png'; // Replace with the actual path
+      
+
+
+        // Retrieve the highest score from localStorage
+        let highestScore = localStorage.getItem('highestScore') || 0;
+        document.getElementById('highestScore').textContent = highestScore;
+
+        function say(message) {
+            const utterance = new SpeechSynthesisUtterance(message);
+            synth.speak(utterance);
+        }
+
+        // Game over flag
+        let gameOver = false;
+
+        function gameOverMessage() {
+            if (!gameOver) {
+                say('Game over! Refresh the page to play again.');
+                gameOver = true;
+                // Show the Game Over message
+                document.getElementById('gameOverMessage').style.display = 'block';
+                showRefreshButton();
+            }
+        }
+        function showRefreshButton() {
+        const refreshButton = document.getElementById('refreshButton');
+        refreshButton.style.display = 'block';
+        }
+
+        function drawSnake() {
+        snake.forEach((segment, index) => {
+        if (index === 0) {
+            // Draw the snake's head
+            ctx.drawImage(snakeImage, segment.x, segment.y, gridSize, gridSize);
+        } else {
+            // Draw the snake's body
+            ctx.drawImage(snakeImage, segment.x, segment.y, gridSize, gridSize);
+        }
+         });
+       }
+
+
+        function drawFood() {
+             ctx.drawImage(appleImage, food.x, food.y, gridSize, gridSize);
+        }
+
+
+        function randomizeFoodPosition() {
+            const maxX = (canvasWidth / gridSize) - 1;
+            const maxY = (canvasHeight / gridSize) - 1;
+
+            food.x = Math.floor(Math.random() * maxX) * gridSize;
+            food.y = Math.floor(Math.random() * maxY) * gridSize;
+        }
+
+        function checkCollision() {
+            const head = snake[0];
+            return (
+                head.x < 0 ||
+                head.x >= canvasWidth ||
+                head.y < 0 ||
+                head.y >= canvasHeight ||
+                snake.some((segment, index) => index !== 0 && segment.x === head.x && segment.y === head.y)
+            );
+        }
+
+        function updateScores() {
+            document.getElementById('currentScore').textContent = currentScore;
+            document.getElementById('highestScore').textContent = highestScore;
+
+            // Update the highest score in localStorage
+            localStorage.setItem('highestScore', highestScore);
+        }
+
+        function updateGame() {
+            if (checkCollision()) {
+                if (currentScore > highestScore) {
+                    highestScore = currentScore;
+                    updateScores();
+                }
+                currentScore = 0;
+                gameOverMessage(); // Speak the game over message and display it
+                return;
+               drawScore();
+            }
+         function showRefreshButton() {
+            const refreshButton = document.getElementById('refreshButton');
+            refreshButton.style.display = 'block';
+            }
+
+
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head);
+
+            if (head.x === food.x && head.y === food.y) {
+                randomizeFoodPosition();
+                currentScore += 10;
+                updateScores();
+            } else {
+                snake.pop();
+            }
+
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            drawFood();
+            drawSnake();
+
+            changingDirection = false;
+        }
+
+        document.addEventListener('keydown', event => {
+            if (changingDirection) return;
+            
+            switch (event.key) {
+                case 'ArrowUp':
+                    if (dy !== gridSize) {
+                        dx = 0;
+                        dy = -gridSize;
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (dy !== -gridSize) {
+                        dx = 0;
+                        dy = gridSize;
+                    }
+                    break;
+                case 'ArrowLeft':
+                    if (dx !== gridSize) {
+                        dx = -gridSize;
+                        dy = 0;
+                    }
+                    break;
+                case 'ArrowRight':
+                    if (dx !== -gridSize) {
+                        dx = gridSize;
+                        dy = 0;
+                    }
+                    break;
+            }
+
+            changingDirection = true;
+        });
+
+        randomizeFoodPosition();
+
+        setInterval(updateGame, 150);
+    </script>
+</body>
+</html>
+<div class="separator" style="clear: both;"><a href="https://play-lh.googleusercontent.com/LU72Y-ZB_yLGsIP9-qQVN5jx39k-Zk_YVRWGbZAkNU0mZak2aQHQhf8MM5Z1cE6q7XE=s512" style="display: block; padding: 1em 0; text-align: center; "><img alt="" border="0" width="320" data-original-height="512" data-original-width="512" src="https://play-lh.googleusercontent.com/LU72Y-ZB_yLGsIP9-qQVN5jx39k-Zk_YVRWGbZAkNU0mZak2aQHQhf8MM5Z1cE6q7XE=s320"/></a></div><!DOCTYPE html>
